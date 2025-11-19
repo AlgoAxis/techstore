@@ -1,0 +1,59 @@
+
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: techstore-db
+    environment:
+      POSTGRES_DB: techstore
+      POSTGRES_USER: techstore_user
+      POSTGRES_PASSWORD: techstore_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - techstore-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: techstore-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/techstore
+      SPRING_DATASOURCE_USERNAME: techstore_user
+      SPRING_DATASOURCE_PASSWORD: techstore_pass
+      JWT_SECRET: 58946df9e9d02091bffd5ebbd403a26d
+
+      environment:
+      jwt.expiration: 86400000
+
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - techstore-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: techstore-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:8080/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - techstore-network
+
+volumes:
+  postgres_data:
+
+networks:
+  techstore-network:
+    driver: bridge
